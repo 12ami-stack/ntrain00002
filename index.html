@@ -420,7 +420,7 @@
         const canPlace = (st) => {
             let P = structPoly(st, 0.5);
             for (const o of structures) if (satOverlap(P, structPoly(o, 0))) return false;
-            for (const l of lakes) if (polyHitsPoly(P, l.pts)) return false;
+            for (const l of lakes) if (l.kind !== 'mountain' && polyHitsPoly(P, l.pts)) return false; // 湖の上は不可、山の上は置ける
             let T = structPoly(st, 9); // レールの幅ぶん広げた範囲に線路がかかる場所には置けない
             for (const t of tracks) for (let i = 0; i < t.length - 1; i++) {
                 let a = t[i], b = t[i + 1];

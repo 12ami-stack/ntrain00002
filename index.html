@@ -114,7 +114,7 @@
         ・パネル上部の「元に戻す」「やり直し」で、線路・ストラクチャ・湖の作成と消去を取り消せます（1回のドラッグ／クリックを1回として、最大50回）。<br>
         ・「消しゴム」を選んで、ストラクチャ・湖・山をクリックすると消せます。線路は、クリックした位置の線分1本が消えます（ドラッグで続けて消せます）。<br>
         ・マウスホイール（トラックパッド）で画面を動かせます。画面の上・下・左の端、または操作パネルの左側の縁にマウスを近づけると三角の矢印が現れ、クリックするたびにその向きへ動きます。<br>
-        ・「車両数」のボタンで、電車を1・2・3・6両編成にできます（後ろの車両は先頭車両の通った跡をたどります）。<br>
+        ・「車両数」のボタンで、電車を1・2・3・6・9両編成にできます（後ろの車両は先頭車両の通った跡をたどります）。<br>
         ・「停止」ボタン（または全体の速度スライダーを左端の0）で、2秒かけて減速して停止します。停止中は「出発」に変わり、押す（または速度を選ぶ）と2秒かけて動き出します。行き止まりでは、手前で減速して突端で止まり、1秒待ってから後退して引き返します（前後は次の折り返しまで逆になります）。<br>
         ・右上のパネルから画面スケール（表示範囲を1・2・4倍）、全体の速度・背景色などを自由に調整できます。
     </div>
@@ -149,6 +149,7 @@
             <button class="btn car-btn" data-cars="2">2両</button>
             <button class="btn car-btn" data-cars="3">3両</button>
             <button class="btn car-btn" data-cars="6">6両</button>
+            <button class="btn car-btn" data-cars="9">9両</button>
         </div>
 
         <div style="display:none">
@@ -668,7 +669,7 @@
             // 設定
             let st = d.settings || {};
             trainSpeedMultiplier = Math.min(3, Math.max(0, num(st.speed, 1))); speedAnim = null;
-            carCount = [1, 2, 3, 6].includes(st.cars) ? st.cars : 1; trailTrain = null; updateCarUI();
+            carCount = [1, 2, 3, 6, 9].includes(st.cars) ? st.cars : 1; trailTrain = null; updateCarUI();
             junctionSpeedMultiplier = Math.min(1, Math.max(0.1, num(st.junction, 0.5)));
             realPointEnabled = true;
             mode = ['alt', 'right', 'left', 'rand'].includes(st.mode) ? st.mode : 'left'; // 「直近」は封印中 // 「直近」は封印中のためランダムにする

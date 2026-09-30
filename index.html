@@ -30,16 +30,13 @@
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 8px 14px;
         }
 
-        .arrow {
-            position: fixed; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-family: inherit; color: var(--text-color); background: var(--panel-bg);
-            border: 1px solid var(--panel-border); border-radius: 8px; cursor: pointer; user-select: none;
-            opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 20;
-        }
-        .arrow.show { opacity: 1; pointer-events: auto; }
-        #arrow-up { top: 2px; left: calc(50% - 14px); }
-        #arrow-down { bottom: 2px; left: calc(50% - 14px); }
-        #arrow-left { left: 2px; top: calc(50% - 14px); }
+        .sbar { position: fixed; background: rgba(255,255,255,0.14); border-radius: 7px; opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 20; }
+        .sbar.show { opacity: 1; pointer-events: auto; }
+        #sb-v { top: 8px; bottom: 24px; width: 12px; }
+        #sb-h { left: 8px; bottom: 2px; height: 12px; }
+        .sbar .thumb { position: absolute; background: rgba(255,255,255,0.65); border-radius: 6px; cursor: grab; }
+        #sb-v .thumb { left: 0; right: 0; }
+        #sb-h .thumb { top: 0; bottom: 0; }
 
         #ui-panel {
             position: absolute; top: 20px; right: 0;
@@ -113,16 +110,14 @@
         ・ストラクチャは、ドラッグすると隙間なく続けて置けます。ほかのストラクチャ・湖・線路と重なる場所には置けません。湖のボタンも、押すたびに色が変わります。<br>
         ・パネル上部の「元に戻す」「やり直し」で、線路・ストラクチャ・湖の作成と消去を取り消せます（1回のドラッグ／クリックを1回として、最大50回）。<br>
         ・「消しゴム」を選んで、ストラクチャ・湖・山をクリックすると消せます。線路は、クリックした位置の線分1本が消えます（ドラッグで続けて消せます）。<br>
-        ・マウスホイール（トラックパッド）で画面を動かせます。画面の上・下・左の端、または操作パネルの左側の縁にマウスを近づけると三角の矢印が現れ、クリックするたびにその向きへ動きます。<br>
+        ・マウスホイール（トラックパッド）で画面を動かせます。画面の下、または操作パネルの左端にマウスを合わせるとスクロールバーが現れ、ドラッグして動かせます。<br>
         ・「車両数」のボタンで、電車を1・2・3・6・9両編成にできます（後ろの車両は先頭車両の通った跡をたどります）。<br>
         ・「停止」ボタン（または全体の速度スライダーを左端の0）で、2秒かけて減速して停止します。停止中は「出発」に変わり、押す（または速度を選ぶ）と2秒かけて動き出します。行き止まりでは、手前で減速して突端で止まり、1秒待ってから後退して引き返します（前後は次の折り返しまで逆になります）。<br>
         ・右上のパネルから画面スケール（表示範囲を1・2・4倍）、全体の速度・背景色などを自由に調整できます。
     </div>
     
-    <button class="arrow" id="arrow-up">▲</button>
-    <button class="arrow" id="arrow-down">▼</button>
-    <button class="arrow" id="arrow-left">◀</button>
-    <button class="arrow" id="arrow-right">▶</button>
+    <div class="sbar" id="sb-v"><div class="thumb" id="sb-v-thumb"></div></div>
+    <div class="sbar" id="sb-h"><div class="thumb" id="sb-h-thumb"></div></div>
 
     <div id="ui-panel">
         <div class="button-group">
@@ -194,7 +189,6 @@
             <button class="btn st-btn" data-type="mountain">山</button>
             <button class="btn st-btn" data-type="eraser">消しゴム</button>
         </div>
-        <div id="st-hint" style="font-size:11px;color:rgba(255,255,255,0.7);display:none"></div>
 
         <div class="section-title">画面スケール（表示範囲）</div>
         <div class="button-group">
@@ -209,7 +203,7 @@
             <button class="btn" id="import-btn">ファイル読込</button>
         </div>
         <input type="file" id="import-file" accept=".json,application/json" style="display:none">
-        <div id="save-msg" style="font-size:11px;color:rgba(255,255,255,0.75);min-height:14px"></div>
+        <div id="save-msg" style="font-size:11px;color:rgba(255,255,255,0.75);height:14px;line-height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
 
         <div class="section-title">カラーテーマ</div>
         <div class="button-group">
@@ -337,10 +331,10 @@
         let lakes = [], currentLake = null, isLakeDrawing = false, lakeOn = false; // 湖（ドラッグで描いた軌跡を塗りつぶす。見た目のみ）
         let isErasing = false;
         // 色は押すたびに デフォルト → 色A → 色B → デフォルト…（向きは描画モードに従う）
-        const COLOR_NAMES = { station: ['デフォルト', '青', '瓦色'], house: ['デフォルト', '青', '瓦色'], building: ['デフォルト', '青', '茶系'], tree: ['デフォルト', '濃い緑', '紅葉'], lake: ['デフォルト', '濃い青', '緑の池'], mountain: ['緑', '深緑', '黄緑'] };
+        const COLOR_NAMES = { station: ['デフォルト', '青', '瓦色'], house: ['デフォルト', '青', '瓦色'], building: ['デフォルト', '青', '茶系'], tree: ['デフォルト', '濃い緑', '紅葉'], lake: ['デフォルト', '濃い青', '淡いグレー'], mountain: ['濃い緑', 'さらに暗い緑', '緑'] };
         const BTN_COLORS = { // ボタンに表示する色（デフォルトは黄）
             station: ['#fdcb6e', '#2980b9', '#5f6b73'], house: ['#fdcb6e', '#3b82c4', '#66727a'],
-            building: ['#fdcb6e', '#2c5f8a', '#6b4a3a'], tree: ['#1e6b3a', '#0f4a26', '#c0392b'], lake: ['#4aa3df', '#2a6fb0', '#3d8f6f'], mountain: ['#5aa64b', '#2f6b3a', '#9acd32']
+            building: ['#fdcb6e', '#2c5f8a', '#6b4a3a'], tree: ['#1e6b3a', '#0f4a26', '#c0392b'], lake: ['#4aa3df', '#2a6fb0', '#d5dbdf'], mountain: ['#2f6b3a', '#1d4a27', '#5aa64b']
         };
         const PALETTE = {
             station: [{ roof: '#d63031', ridge: '#b71c1c' }, { roof: '#2980b9', ridge: '#1b4f72' }, { roof: '#5f6b73', ridge: '#3d464c' }],
@@ -350,9 +344,9 @@
         };
         const structureColorIdx = { station: 0, house: 0, building: 0, tree: 0, lake: 0, mountain: 0 };
         let lakeKind = 'lake'; // 湖・山のどちらを描くか
-        const LAKE_COLORS = [{ fill: '#4aa3df', edge: '#2e86c1' }, { fill: '#2a6fb0', edge: '#1a4f80' }, { fill: '#3d8f6f', edge: '#2a6b52' }]; // 3色目：緑の池
-        const MOUNTAIN_COLORS = [{ fill: '#5aa64b', edge: '#3e7d34' }, { fill: '#2f6b3a', edge: '#1f4a28' }, { fill: '#9acd32', edge: '#6f9b1f' }];
-        const stBtns = Array.from(document.querySelectorAll('.st-btn')), stHint = document.getElementById('st-hint');
+        const LAKE_COLORS = [{ fill: '#4aa3df', edge: '#2e86c1' }, { fill: '#2a6fb0', edge: '#1a4f80' }, { fill: '#d5dbdf', edge: '#aeb6bc' }]; // 3色目：淡いグレー
+        const MOUNTAIN_COLORS = [{ fill: '#2f6b3a', edge: '#1f4a28' }, { fill: '#1d4a27', edge: '#12301a' }, { fill: '#5aa64b', edge: '#3e7d34' }]; // 濃い緑・さらに暗い緑・緑
+        const stBtns = Array.from(document.querySelectorAll('.st-btn'));
         const updateStructureUI = () => {
             stBtns.forEach(b => {
                 let t = b.dataset.type, on = (t === 'track' && !structureSel && !eraserOn && !lakeOn) || (t === 'eraser' && eraserOn) || ((t === 'lake' || t === 'mountain') && lakeOn && lakeKind === t) || t === structureSel;
@@ -365,10 +359,6 @@
                 }
             });
             canvas.style.cursor = eraserOn ? 'cell' : (structureSel ? 'copy' : 'crosshair');
-            if (lakeOn) { stHint.style.display = 'block'; stHint.textContent = 'ドラッグした軌跡が' + (lakeKind === 'mountain' ? '山' : '湖') + 'の形になります　色：' + COLOR_NAMES[lakeKind][structureColorIdx[lakeKind]] + '　同じボタンで色を切り替え'; }
-            else if (eraserOn) { stHint.style.display = 'block'; stHint.textContent = 'ストラクチャ・線路の線分・湖をクリック（ドラッグ）で消します'; }
-            else if (structureSel) { stHint.style.display = 'block'; stHint.textContent = '色：' + COLOR_NAMES[structureSel][structureColorIdx[structureSel]] + '　同じボタンを押すたびに切り替わります（向きは描画モードに従います）'; }
-            else stHint.style.display = 'none';
         };
         stBtns.forEach(btn => btn.addEventListener('click', () => {
             let t = btn.dataset.type;
@@ -390,11 +380,11 @@
             let dx = p.x - st.x, dy = p.y - st.y, r = st.rot || 0;
             let lx = dx * Math.cos(r) + dy * Math.sin(r), ly = -dx * Math.sin(r) + dy * Math.cos(r);
             if (st.type === 'tree') return Math.hypot(dx, dy) <= 16 + m;
-            let h = { station: [40, 13], house: [17, 15], building: [20, 20] }[st.type] || [20, 20];
+            let h = { station: [40, 13], house: [17, 15], building: [25, 25] }[st.type] || [25, 25];
             return Math.abs(lx) <= h[0] + m && Math.abs(ly) <= h[1] + m;
         };
         // ----- 重なり判定（ストラクチャどうし・湖・線路の上には置けない） -----
-        const S_DIMS = { station: [40, 13], house: [17, 15], building: [20, 20] };
+        const S_DIMS = { station: [40, 13], house: [17, 15], building: [25, 25] }; // ビルは1.25倍
         const structPoly = (st, infl) => {
             if (st.type === 'tree') { let r = 16 + infl, pts = []; for (let i = 0; i < 16; i++) { let a = i * Math.PI / 8; pts.push({ x: st.x + r * Math.cos(a), y: st.y + r * Math.sin(a) }); } return pts; }
             let hx = S_DIMS[st.type][0] + infl, hy = S_DIMS[st.type][1] + infl, c = Math.cos(st.rot || 0), sn = Math.sin(st.rot || 0);
@@ -517,6 +507,7 @@
                 ctx.fillStyle = pal.ridge; ctx.fillRect(-17, -1, 34, 2);
                 ctx.fillStyle = '#7f8c8d'; ctx.fillRect(8, -11, 5, 5);
             } else if (st.type === 'building') {
+                ctx.scale(1.25, 1.25); // ビルの大きさを1.25倍に
                 ctx.fillStyle = shadow; ctx.fillRect(-20 + 4, -20 + 4, 40, 40);
                 ctx.fillStyle = pal.body; ctx.fillRect(-20, -20, 40, 40);
                 ctx.fillStyle = pal.top; ctx.fillRect(-15, -15, 30, 30);
@@ -720,27 +711,50 @@
         });
 
 
-        // ===== 画面スクロール（マウスホイール + 画面端に近づくと現れる三角矢印のクリック） =====
-        const SCROLL_STEP = 150; // 矢印を1回クリックしたときに動く距離（画面上のpx）
+        // ===== 画面スクロール（マウスホイール + スクロールバー：画面の下、または操作メニューの左端にマウスを合わせると表示） =====
         const panelEl = document.getElementById('ui-panel');
-        const arrows = { up: document.getElementById('arrow-up'), down: document.getElementById('arrow-down'), left: document.getElementById('arrow-left'), right: document.getElementById('arrow-right') };
-        const scrollBy = (dx, dy) => { viewOffX += dx * SCROLL_STEP * viewScale; viewOffY += dy * SCROLL_STEP * viewScale; };
-        arrows.up.addEventListener('click', () => scrollBy(0, -1));
-        arrows.down.addEventListener('click', () => scrollBy(0, 1));
-        arrows.left.addEventListener('click', () => scrollBy(-1, 0));
-        arrows.right.addEventListener('click', () => scrollBy(1, 0));
-        const EDGE = 30; // この距離以内にマウスを置くと矢印が現れる
-        window.addEventListener('mousemove', (e) => {
+        const sbV = document.getElementById('sb-v'), sbH = document.getElementById('sb-h');
+        const thumbV = document.getElementById('sb-v-thumb'), thumbH = document.getElementById('sb-h-thumb');
+        let sbDrag = null;
+        const computeExtent = (axis) => {
+            let viewLen = (axis === 'x' ? window.innerWidth : window.innerHeight) * viewScale;
+            let off = axis === 'x' ? viewOffX : viewOffY, mn = off, mx = off + viewLen;
+            const add = (p) => { let v = axis === 'x' ? p.x : p.y; if (v < mn) mn = v; if (v > mx) mx = v; };
+            tracks.forEach(t => t.forEach(add)); structures.forEach(add); lakes.forEach(l => l.pts.forEach(add));
+            return { min: mn - viewLen, L: (mx - mn) + 2 * viewLen, viewLen: viewLen }; // 内容と表示範囲の外側にも、表示範囲1つ分の余白
+        };
+        const updateScrollbars = () => {
+            [['x', sbH, thumbH], ['y', sbV, thumbV]].forEach(([axis, bar, thumb]) => {
+                if (!bar.classList.contains('show')) return;
+                let ext = (sbDrag && sbDrag.axis === axis) ? sbDrag.ext : computeExtent(axis);
+                let trackPx = axis === 'x' ? bar.clientWidth : bar.clientHeight, off = axis === 'x' ? viewOffX : viewOffY;
+                let len = Math.max(30, Math.min(trackPx, trackPx * ext.viewLen / ext.L));
+                let pos = Math.max(0, Math.min(trackPx - len, (off - ext.min) / ext.L * trackPx));
+                if (axis === 'x') { thumb.style.left = pos + 'px'; thumb.style.width = len + 'px'; }
+                else { thumb.style.top = pos + 'px'; thumb.style.height = len + 'px'; }
+            });
+        };
+        const refreshScrollbarVisibility = (e) => {
             let r = panelEl.getBoundingClientRect();
-            // 右向きの矢印は、操作パネルの左側に表示する（パネルは右端にあるため）
-            arrows.right.style.left = (r.left - 30) + 'px';
-            arrows.right.style.top = ((r.top + r.bottom) / 2 - 14) + 'px';
-            arrows.up.classList.toggle('show', e.clientY <= EDGE);
-            arrows.down.classList.toggle('show', e.clientY >= window.innerHeight - EDGE);
-            arrows.left.classList.toggle('show', e.clientX <= EDGE);
-            arrows.right.classList.toggle('show', e.clientX >= r.left - EDGE && e.clientX < r.left && e.clientY >= r.top && e.clientY <= r.bottom);
+            sbV.style.left = (r.left - 16) + 'px';                          // 縦：操作メニューの左端の外側
+            sbH.style.right = (window.innerWidth - r.left + 24) + 'px';     // 横：下部（縦バーと重ならない長さ）
+            let nearV = e.clientX >= r.left - 30 && e.clientX < r.left, nearH = e.clientY >= window.innerHeight - 30;
+            sbV.classList.toggle('show', nearV || !!(sbDrag && sbDrag.axis === 'y'));
+            sbH.classList.toggle('show', nearH || !!(sbDrag && sbDrag.axis === 'x'));
+        };
+        window.addEventListener('mousemove', (e) => {
+            if (sbDrag) {
+                let d = ((sbDrag.axis === 'x' ? e.clientX : e.clientY) - sbDrag.startClient) / sbDrag.trackPx * sbDrag.ext.L;
+                if (sbDrag.axis === 'x') viewOffX = sbDrag.startOff + d; else viewOffY = sbDrag.startOff + d;
+            }
+            refreshScrollbarVisibility(e);
         });
-        document.documentElement.addEventListener('mouseleave', () => { Object.values(arrows).forEach(a => a.classList.remove('show')); });
+        document.documentElement.addEventListener('mouseleave', () => { if (!sbDrag) { sbV.classList.remove('show'); sbH.classList.remove('show'); } });
+        window.addEventListener('mouseup', (e) => { if (sbDrag) { sbDrag = null; refreshScrollbarVisibility(e); } });
+        [['x', sbH, thumbH], ['y', sbV, thumbV]].forEach(([axis, bar, thumb]) => thumb.addEventListener('mousedown', (e) => {
+            e.preventDefault(); e.stopPropagation();
+            sbDrag = { axis: axis, startClient: axis === 'x' ? e.clientX : e.clientY, startOff: axis === 'x' ? viewOffX : viewOffY, ext: computeExtent(axis), trackPx: axis === 'x' ? bar.clientWidth : bar.clientHeight };
+        }));
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             let k = (e.deltaMode === 1 ? 16 : 1) * viewScale;
@@ -1015,6 +1029,7 @@
                 }
             }
             ctx.restore();
+            updateScrollbars();
             requestAnimationFrame(gameLoop);
         }
         gameLoop();

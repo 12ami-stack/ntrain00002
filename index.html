@@ -197,13 +197,12 @@
             <button class="btn v-btn" id="v-4">4倍</button>
         </div>
 
-        <div class="section-title">保存・読み出し（ファイル）</div>
+        <div class="section-title">ファイル</div>
         <div class="button-group sv-row">
-            <button class="btn" id="export-btn">ファイル書出</button>
             <button class="btn" id="import-btn">ファイル読込</button>
+            <button class="btn" id="export-btn">ファイル書出</button>
         </div>
         <input type="file" id="import-file" accept=".json,application/json" style="display:none">
-        <div id="save-msg" style="font-size:11px;color:rgba(255,255,255,0.75);height:14px;line-height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
 
         <div class="section-title">カラーテーマ</div>
         <div class="button-group">
@@ -613,7 +612,7 @@
 
 
         // ===== 保存・読み出し（ファイルの書き出し／読み込み） =====
-        const saveMsg = document.getElementById('save-msg');
+        const saveMsg = { textContent: '' }; // メッセージ欄は廃止（表示しない）
 
         const makeSaveData = () => ({
             v: 1, savedAt: Date.now(),
